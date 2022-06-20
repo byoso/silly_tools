@@ -4,15 +4,14 @@
 import os
 
 
-def check_pip():
+def check_pip(test=False):
     """Checks if pip is installed, if it is not,
     closes the program with a message"""
     res = os.popen("python3 -m pip -V").read().strip()
     OK = False
     if res.startswith('pip'):
         OK = True
-    # if OK:  # debug
-    if not OK:
+    if not OK or test:
         this_file = os.path.basename(__file__)
         print(
             "\x1b[0;30;33m"
