@@ -57,10 +57,8 @@ class SillyBrowser(gtk.Window):
             home_page="",
             title="Flask for desktop",
             header_bar=None,
-            subtitle="Your app's window",
             icon='FlaskFdIcon',  # png without ".png" extention
             is_main=False,
-            server_launcher=None,
             base_dir=None,
             *args, **kwargs
             ):
