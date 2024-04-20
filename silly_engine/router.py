@@ -8,16 +8,30 @@ class RouterError(Exception):
         super().__init__({'status': self.status, 'message': self.message})
 
 
+class Subrouter:
+    def __init__(self, prefix, router, description):
+        self.prefix = prefix
+        self.router = router
+        self.description = description
+
+
 class Router:
-    def __init__(self, routes=None, name="Silly Router", separator=" ", query_separator="?", queries_separator="+"):
+    def __init__(
+            self, routes: dict=None,
+            name: str="Silly Router",
+            separator: str=" ",
+            query_separator="?",
+            queries_separator="+",
+            width=100):
         self.name = name
         self.separator = separator
         self.query_separator = query_separator
         self.queries_separator = queries_separator
         self._routes = {}
+        self._subroutes = {}
         self._help = []
         self.welcoming = f"\n##### '{self.name}' help "
-        self.width = 100
+        self.width = width
         self.logging = True
         self.__datas = {
             "building_paths": [],
@@ -40,10 +54,14 @@ class Router:
         if isinstance(incoming_route, str):
             self._help.append("# " + incoming_route)
             return
+        if isinstance(incoming_route, Subrouter):
+            self._help.append(f"@ {incoming_route.prefix:<50} -> {incoming_route.description}")
+            self._subroutes[incoming_route.prefix] = incoming_route.router
+            return
         try:
             incoming_route = list(incoming_route)
         except TypeError:
-            raise RouterError("A route must be a list or a tuple",
+            raise RouterError("A route must be a list, a tuple, or a Subrouter",
                 "Route building")
         if not 2 <= len(incoming_route) <= 3:
             raise RouterError(
@@ -108,7 +126,7 @@ class Router:
         print(self.help)
 
 
-    def query(self, query="", method='GET', context={}):
+    def query(self, query="", method='GET', context={}, query_params=None):
         if not isinstance(query, str):
             try:
                 query = self.separator.join(query)
@@ -120,10 +138,14 @@ class Router:
                 "Bad query")
         path = query.split(self.query_separator)[0].strip().split(self.separator)
         params = query.split(self.query_separator)[1].strip().split(self.queries_separator) if self.query_separator in query else None
-        query_params = {}
-        if params:
-            for param in params:
-                query_params[param.strip().split("=")[0]] = param.strip().split("=")[1]
+
+        if len(path) > 0 and path[0] in self._subroutes:
+            return self._subroutes[path[0]].query(path[1:], query_params=params, context=context)
+        if query_params is None:
+            query_params = {}
+            if params:
+                for param in params:
+                    query_params[param.strip().split("=")[0]] = param.strip().split("=")[1]
         if self._routes.get(len(path)) is None:
             raise RouterError(f"Route not found for path: {path}", 404)
         route = self._get_route(path, self._routes.get(len(path)))

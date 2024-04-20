@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 
-
+import socket
 import os
 from threading import Thread
 
@@ -9,6 +9,18 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk as gtk
 gi.require_version('WebKit2', '4.0')
 from gi.repository import WebKit2 as wk
+
+from flask_app import app
+
+
+def get_free_port(port=5050):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.bind(("127.0.0.1", port))
+    except OSError:
+        return get_free_port(port+1)
+    s.close()
+    return port
 
 
 class SillyHeaderBar(gtk.HeaderBar):
@@ -40,14 +52,13 @@ class SillyBrowser(gtk.Window):
 
     def __init__(
             self,
-            port=5051,
+            server=None,
+            port=None,
             home_page="",
             title="Flask for desktop",
             header_bar=None,
-            subtitle="Your app's window",
             icon='FlaskFdIcon',  # png without ".png" extention
             is_main=False,
-            server_launcher=None,
             base_dir=None,
             *args, **kwargs
             ):
@@ -83,7 +94,6 @@ class SillyBrowser(gtk.Window):
                         "next", gtk.IconSize.BUTTON)
                     button.connect("clicked", self._next)
                 if button_name == "hb_find":
-                    # button = gtk.Button(label="go-find")
                     button = gtk.Button.new_from_icon_name(
                         "find", gtk.IconSize.BUTTON)
                     button.connect("clicked", self._find)
@@ -93,13 +103,14 @@ class SillyBrowser(gtk.Window):
             self.set_title(title)
         self.connect("button-press-event", self._on_button_press_event)
         self.show_all()
-        self.home_page = home_page
-        self.server_launcher = server_launcher
-        if self.server_launcher is not None:
-            self.port = self.server_launcher.port
+
+        self.server = server
+        if port is None:
+            self.port = get_free_port()
         else:
             self.port = port
-        # Icon
+
+        self.home_page = home_page
         if base_dir:
             self.base_dir = base_dir
             if icon:
@@ -115,14 +126,16 @@ class SillyBrowser(gtk.Window):
         if is_main:
             self.connect("delete-event", gtk.main_quit)
 
-        if self.server_launcher is not None:
-            self._run()
+        self._run()
 
     def _run(self):
+
+        def run_server():
+            self.server.run(port=self.port, debug=False)
         Thread(
-            target=self.server_launcher.launch,
+            target=run_server,
             daemon=True, name="silly_gui").start()
-        gtk.main()
+        print(f"Flask app running on port {self.port}")
 
     def _home(self, *args):
         self.web_view.load_uri(
@@ -167,10 +180,12 @@ if __name__ == "__main__":
         # 'hb_find'
     ]
     header_bar.buttons_right = []
+
     SillyBrowser(
         title="Desktop webapp",
-        home_page="http://example.com",
-        port=80,
+        server=app,
+        port=None,
+        home_page="http://localhost",
         is_main=True,
         header_bar=header_bar,
         ).show()
