@@ -21,6 +21,10 @@ app.secret_key = "find_a_better_key!"
 def index():
     return render_template("index.html")
 
+@app.route("/page2", methods=["GET"])
+def page_2():
+    return render_template("page2.html")
+
 
 if __name__ == "__main__":
     app.run(port=5050, debug=True)

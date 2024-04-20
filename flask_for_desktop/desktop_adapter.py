@@ -23,7 +23,6 @@ def get_free_port(port=5050):
     return port
 
 
-
 class SillyHeaderBar(gtk.HeaderBar):
     def __init__(
         self,
@@ -54,7 +53,6 @@ class SillyBrowser(gtk.Window):
     def __init__(
             self,
             server=None,
-            debug=False,
             port=None,
             home_page="",
             title="Flask for desktop",
@@ -98,7 +96,6 @@ class SillyBrowser(gtk.Window):
                         "next", gtk.IconSize.BUTTON)
                     button.connect("clicked", self._next)
                 if button_name == "hb_find":
-                    # button = gtk.Button(label="go-find")
                     button = gtk.Button.new_from_icon_name(
                         "find", gtk.IconSize.BUTTON)
                     button.connect("clicked", self._find)
@@ -110,19 +107,12 @@ class SillyBrowser(gtk.Window):
         self.show_all()
 
         self.server = server
-        self.debug = debug
         if port is None:
             self.port = get_free_port()
         else:
             self.port = port
 
         self.home_page = home_page
-        # self.server_launcher = server_launcher
-        # if self.server_launcher is not None:
-        #     self.port = self.server_launcher.port
-        # else:
-        #     self.port = port
-        # Icon
         if base_dir:
             self.base_dir = base_dir
             if icon:
@@ -138,13 +128,12 @@ class SillyBrowser(gtk.Window):
         if is_main:
             self.connect("delete-event", gtk.main_quit)
 
-        # if self.server_launcher is not None:
         self._run()
 
     def _run(self):
 
         def run_server():
-            self.server.run(port=self.port, debug=self.debug)
+            self.server.run(port=self.port, debug=False)
         Thread(
             target=run_server,
             daemon=True, name="silly_gui").start()
@@ -197,8 +186,8 @@ if __name__ == "__main__":
     SillyBrowser(
         title="Desktop webapp",
         server=app,
-        home_page="http://localhost",
         port=None,
+        home_page="http://localhost",
         is_main=True,
         header_bar=header_bar,
         ).show()
