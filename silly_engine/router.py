@@ -2,26 +2,23 @@
 
 
 class RouterError(Exception):
-    def __init__(self, message="Router Error", status="Internal", *args, **kwargs):
+    def __init__(self, message: str="Router Error", status: int=None, *args, **kwargs):
         self.status = status
         self.message = message
-        super().__init__({'cause': self.status, 'message': self.message})
+        super().__init__({'status': self.status, 'message': self.message})
 
 
 class Router:
-    def __init__(
-            self, routes=None,name="Silly Router", separator=" ", query_separator="?", queries_separator="+",
-            width=100, logging=True, welcoming="\n##### <placeholder> help "
-            ):
+    def __init__(self, routes=None, name="Silly Router", separator=" ", query_separator="?", queries_separator="+"):
         self.name = name
         self.separator = separator
         self.query_separator = query_separator
         self.queries_separator = queries_separator
         self._routes = {}
         self._help = []
-        self.welcoming = welcoming.replace("<placeholder>", self.name)
-        self.width = width if width >= 80 else 80
-        self.logging = logging
+        self.welcoming = f"\n##### '{self.name}' help "
+        self.width = 100
+        self.logging = True
         self.__datas = {
             "building_paths": [],
             "logs": []
@@ -59,8 +56,7 @@ class Router:
             if not isinstance(incoming_route[2], str):
                 raise RouterError("The 3rd element of a route must be a string as a description for the help",
             "Route building")
-            half_width = self.width // 2
-            self._help.append(f"- {str(incoming_route[0]):<{half_width}} -> {str(incoming_route[2])}")
+            self._help.append(f"- {str(incoming_route[0]):<50} -> {str(incoming_route[2])}")
         else:
             incoming_route.append("")
         if not callable(incoming_route[1]):
@@ -105,14 +101,14 @@ class Router:
         help = self.welcoming + "#" * (self.width - len(self.welcoming)) + "\n"
         for line in self._help:
             help += line + "\n"
-        help += "\n" + "#" * self.width + "\n"
+        help += "\n" + "#" * self.width
         return help
 
     def display_help(self, **kwargs):
         print(self.help)
 
 
-    def query(self, query="", method='GET'):
+    def query(self, query="", method='GET', context={}):
         if not isinstance(query, str):
             try:
                 query = self.separator.join(query)
@@ -129,10 +125,11 @@ class Router:
             for param in params:
                 query_params[param.strip().split("=")[0]] = param.strip().split("=")[1]
         if self._routes.get(len(path)) is None:
-            raise RouterError(f"Route not found for path: {path}", "Route not found")
+            raise RouterError(f"Route not found for path: {path}", 404)
         route = self._get_route(path, self._routes.get(len(path)))
         kwargs = self._get_kwargs(route, path)
         kwargs["query_params"] = query_params
+        kwargs["context"] = context
         return route[0](**kwargs)
 
     def _get_kwargs(self, route, query):
@@ -161,9 +158,9 @@ class Router:
     def _get_route(self, path, available_routes, index=0):
         if index >= len(path):
             if len(available_routes) == 0:
-                raise RouterError(f"Route not found for path: {path}", "Route not found")
+                raise RouterError(f"Route not found for path: {path}", 404)
             elif len(available_routes) > 1:
-                raise RouterError(f"Uncaught ambiguity: {[route[1] for route in available_routes]}", "Route building")
+                raise RouterError(f"Uncaught ambiguity: {[route[1] for route in available_routes]}", 500)
             else:
                 return available_routes[0]
         sure_list = []
@@ -178,4 +175,4 @@ class Router:
         elif len(unsure_list) > 0:
             return self._get_route(path, unsure_list, index+1)
         else:
-            raise RouterError(f"Route not found for path: {path}", "Route not found")
+            raise RouterError(f"Route not found for path: {path}", 404)
