@@ -7,7 +7,7 @@ This is a test file for the Silly Router, and also an example of how to use it.
 import sys
 from pprint import pprint
 
-from router import Router, RouterError, Subrouter
+from silly_engine import Router, RouterError, Subrouter
 
 if __name__ == "__main__":
 
