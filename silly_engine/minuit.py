@@ -1,4 +1,7 @@
 
+PROMPT = " > "
+
+
 class FieldError(Exception):
     def __init__(self, message: str="Field Error", status="Internal", *args, **kwargs):
         self.status = status
@@ -85,9 +88,8 @@ class ListField:
         return self.choices[response]["value"] if response else None
 
 class Form:
-    def __init__(self, fields: list = None, validator=None, error_message=None, prompt=" > "):
+    def __init__(self, fields: list = None, validator=None, error_message=None, prompt=PROMPT):
         self.fields = fields
-        self.data = {}
         self.validator = validator
         self.error_message = error_message
         self.prompt = prompt
@@ -100,6 +102,7 @@ class Form:
         self.fields.append(field)
 
     def ask(self):
+        self.data = {}
         for field in self.fields:
             if field.name in self.data:
                 raise FormError(f"Field {field.name} already exists")
@@ -113,6 +116,31 @@ class Form:
                 # for choice in field.choices:
                 self.data[field.name] = field.ask(field.name, self.error_message, self.prompt)
         return self.data
+
+
+def ask_confirm(message="Are you sure ?", callback_no=None, callback_yes=None, prompt=PROMPT, default="y"):
+    """Ask yes or no, only the callback_no is required"""
+    if callback_no is None or not callable(callback_no):
+        raise FieldError("callback_no function is missing or is not callable", "Internal")
+    if callback_yes is not None and not callable(callback_yes):
+        raise FieldError("callback_yes expects a callable or None", "Internal")
+    choices = {"y": callback_yes, "n": callback_no}
+    display_choices = []
+    if not default:
+        if default not in ["y", "Y", "n", "N", None]:
+            raise FormError("Invalid default value, must be None, 'y' or 'n'", "Internal")
+    else:
+        default = default.lower().strip()
+    for choice in choices:
+        choice = choice.upper() if choice == default else choice.lower()
+        display_choices.append(choice)
+    confirmation = input(f"{message} ({display_choices[0]}/{display_choices[1]}){prompt}").lower().strip()
+    if not confirmation and confirmation is not None:
+        confirmation = default
+    if confirmation not in choices:
+        return ask_confirm(message, callback_no, callback_yes, prompt, default)
+    if choices[confirmation] is not None:
+        choices[confirmation]()
 
 
 class Menu:

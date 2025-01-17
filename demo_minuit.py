@@ -1,22 +1,31 @@
 #! /usr/bin/env python3
 
-from silly_engine import Field, Form, ListField
+from pprint import pprint
+
+from silly_engine import Field, Form, ListField, ask_confirm
 from silly_engine import c, Logger
 
 logger = Logger("Minuit")
-logger.info("This is a demo of the minuit module")
+logger.info("Let the demo begin here with a RPG character creation")
 
-form = Form([
+character_form = Form([
         Field("name", required = True, error_message=f"{c.warning}A name is required{c.end}"),
-        Field("age", validator=lambda x: x>0, typing=int, error_message=f"{c.warning}Age must be a positive number{c.end}"),
-        ListField(
-            "occupation", "\nYour ocupation ?", choices=[( "dev", "Developer"), ("des", "Designer"), ("man", "Manager"), ("other", "Other")],
-            error_message=f"{c.warning}Enter a number from 1 to 4{c.end}",
-            # required=True
-            ),
-        Field("working", text="currently working ?", typing=bool, error_message=f"{c.warning}Invalid value entered, choose 0 or 1{c.end}", required=True),
+        # Field("Strength", validator=lambda x: x>0, typing=int, error_message=f"{c.warning}Strength must be a positive number{c.end}", required=True),
+        # Field("Mana", validator=lambda x: x>0, typing=int, error_message=f"{c.warning}Mana must be a positive number{c.end}"),
+        # ListField(
+        #     "occupation", "\nYour ocupation ?", choices=[( "bar", "Barbarian"), ("mag", "Magician"), ("thi", "Thieve"), ("other", "Other")],
+        #     error_message=f"{c.warning}Enter a number from 1 to 4{c.end}"
+        #     ),
+        # Field("working", text="currently working ?", typing=bool, error_message=f"{c.warning}Invalid value entered, choose 0 or 1{c.end}", required=True),
     ])
 
-data = form.ask()
 
-print(data)
+def form_view():
+    data = character_form.ask()
+    ask_confirm("Is it exact ?", callback_no=character_form.ask)
+    print("you just entered:")
+    pprint(data)
+
+
+if __name__ == "__main__":
+    form_view()
