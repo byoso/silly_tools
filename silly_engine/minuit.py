@@ -1,5 +1,6 @@
 
 PROMPT = " > "
+WIDTH = 120
 
 def confirmation_displayer(data):
     print("\n== Check before confirmation ==" + "="*49)
@@ -170,5 +171,43 @@ class Form:
 
 
 class Menu:
-    # TODO: Implement a menu class
-    pass
+    def __init__(self, items=None, title="Menu", prompt=PROMPT, width=WIDTH, error_message="Invalid choice"):
+        """Labels are a list or tuple of 3 elements: [key, label, callback]"""
+        self.title = title
+        self.prompt = prompt
+        self.width = width
+        self.callbacks = {}
+        self.labels = {}
+        self.error_message = error_message
+        if items:
+            self.add_items(items)
+        else:
+            self.items = []
+
+    def add_items(self, items):
+        for item in items:
+            self.add_item(item)
+
+    def add_item(self, item):
+        self.callbacks[str(item[0])] = item[2]
+        self.labels[item[0]] = item[1]
+
+    def ask(self, error=None):
+        display = f"\n=== {self.title} " + "="*(self.width - len(self.title) - 5) + "\n"
+        buttons = []
+        buttons_line = "|"
+        for key in self.labels:
+            buttons.append(f"{key}: {self.labels[key]}")
+        for button in buttons:
+            if len(buttons_line) + len(button) > self.width - 5:
+                display += buttons_line + "\n" + "-"*(self.width) + "\n"
+                buttons_line = "|"
+            buttons_line += button + " | "
+        display += buttons_line + "\n" + "="*(self.width) + "\n"
+        display += error or ''
+        print(display)
+        value = input(self.prompt)
+        if value in self.callbacks:
+            self.callbacks[value]()
+        else:
+            return self.ask(self.error_message)
