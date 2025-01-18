@@ -1,6 +1,12 @@
 
 PROMPT = " > "
 
+def confirmation_displayer(data):
+    print("\n== Check before confirmation ==" + "="*49)
+    for key in data:
+        print(f"- {key:<20}: {data[key]}")
+    print("="*80)
+
 
 class FieldError(Exception):
     def __init__(self, message: str="Field Error", status="Internal", *args, **kwargs):
@@ -8,13 +14,48 @@ class FieldError(Exception):
         self.message = message
         super().__init__({'status': self.status, 'message': self.message})
 
+
 class FormError(FieldError):
     def __init__(self, message: str="Form Error", status="Internal", *args, **kwargs):
         super().__init__(message, status, *args, **kwargs)
 
 
+class ConfirmField:
+    def __init__(self, message="Are you sure ?", yes="y", no="n", default=True, prompt=PROMPT, displayer=confirmation_displayer, recap=False):
+        self.message = message
+        self.yes_no_message = f"({yes}/{no})"
+        self.yes = yes
+        self.no = no
+        self.displayer = displayer
+        self.recap = recap
+        self.default = default
+        self.prompt = prompt
+        self.validator = lambda x: x.strip().lower() in [yes, no, ""]
+        if default not in [True, False, None]:
+            raise FieldError(f"default must be a boolean value or None, received '{default}'", "Internal")
+        if default == True:
+            self.yes_no_message = f"({yes.upper()}/{no})"
+        if default == False:
+            self.yes_no_message = f"({yes}/{no.upper()})"
+
+
+    def ask(self):
+        value = input(f"{self.message}{self.yes_no_message}{self.prompt}")
+        if self.validator:
+            if not self.validator(value):
+                return self.ask()
+        resolve = {self.yes: True, self.no: False}
+        if value.strip() == "":
+            if self.default is None:
+                return self.ask()
+            return self.default
+        else:
+            return resolve[value.strip().lower()]
+
+
+
 class Field:
-    def __init__(self, name=None, text=None, typing=None, validator=None, error_message=None,required=False, prompt=None):
+    def __init__(self, name=None, text=None, typing=None, validator=None, error_message=None,required=False, prompt=None, default=None, is_confirmator=False):
         if name is None:
             raise FieldError("Field name is required")
         self.name = name
@@ -24,6 +65,8 @@ class Field:
         self.error_message = error_message
         self.required = required
         self.prompt = prompt
+        self.default = default
+        self.is_confirmator = is_confirmator
 
     def ask(self, question=None, error_message=None, prompt=None):
         prompt = prompt or self.prompt
@@ -36,7 +79,7 @@ class Field:
                 return self.ask(question, error_message, prompt)
         else:
             if not value:
-                return None
+                return self.default
         if self.typing is not None:
             try:
                 if self.typing == bool:
@@ -102,45 +145,28 @@ class Form:
         self.fields.append(field)
 
     def ask(self):
-        self.data = {}
-        for field in self.fields:
-            if field.name in self.data:
-                raise FormError(f"Field {field.name} already exists")
-            if not isinstance(field, (Field, ListField)):
-                raise FormError("Field must be a Field or ListField")
-            if isinstance(field, Field):
-                question = field.text or field.name
-                self.data[field.name] = field.ask(question, self.error_message, self.prompt)
-                # self.data[field.name] = field.value
-            elif isinstance(field, ListField):
-                # for choice in field.choices:
-                self.data[field.name] = field.ask(field.name, self.error_message, self.prompt)
+        confirmed = False
+        while confirmed is False:
+            confirmed = True
+            self.data = {}
+            for field in self.fields:
+                if not isinstance(field, ConfirmField) and field.name in self.data:
+                    raise FormError(f"Field {field.name} already exists")
+                if not isinstance(field, (Field, ListField, ConfirmField)):
+                    raise FormError("Field must be a Field, ListField or ConfirmField")
+                if isinstance(field, Field):
+                    question = field.text or field.name
+                    self.data[field.name] = field.ask(question, self.error_message, self.prompt)
+                elif isinstance(field, ListField):
+                    self.data[field.name] = field.ask(field.name, self.error_message, self.prompt)
+                elif isinstance(field, ConfirmField):
+                    if field.recap and callable(field.displayer):
+                        field.displayer(self.data)
+                    response = field.ask()
+                    if response == False:
+                        confirmed = False
         return self.data
 
-
-def ask_confirm(message="Are you sure ?", callback_no=None, callback_yes=None, prompt=PROMPT, default="y"):
-    """Ask yes or no, only the callback_no is required"""
-    if callback_no is None or not callable(callback_no):
-        raise FieldError("callback_no function is missing or is not callable", "Internal")
-    if callback_yes is not None and not callable(callback_yes):
-        raise FieldError("callback_yes expects a callable or None", "Internal")
-    choices = {"y": callback_yes, "n": callback_no}
-    display_choices = []
-    if not default:
-        if default not in ["y", "Y", "n", "N", None]:
-            raise FormError("Invalid default value, must be None, 'y' or 'n'", "Internal")
-    else:
-        default = default.lower().strip()
-    for choice in choices:
-        choice = choice.upper() if choice == default else choice.lower()
-        display_choices.append(choice)
-    confirmation = input(f"{message} ({display_choices[0]}/{display_choices[1]}){prompt}").lower().strip()
-    if not confirmation and confirmation is not None:
-        confirmation = default
-    if confirmation not in choices:
-        return ask_confirm(message, callback_no, callback_yes, prompt, default)
-    if choices[confirmation] is not None:
-        choices[confirmation]()
 
 
 class Menu:
