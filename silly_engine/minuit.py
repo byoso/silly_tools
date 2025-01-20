@@ -1,6 +1,14 @@
+import os
+
 
 PROMPT = " > "
 WIDTH = 120
+
+
+def clear():
+    """clears the console"""
+    os.system('cls' if os.name == 'nt' else 'clear')
+
 
 def confirmation_displayer(data):
     print("\n== Check before confirmation ==" + "="*49)
@@ -22,7 +30,7 @@ class FormError(FieldError):
 
 
 class ConfirmField:
-    def __init__(self, message="Are you sure ?", yes="y", no="n", default=True, prompt=PROMPT, displayer=confirmation_displayer, recap=False):
+    def __init__(self, message="Are you sure ?", yes="y", no="n", default=True, prompt=None, displayer=confirmation_displayer, recap=False):
         self.message = message
         self.yes_no_message = f"({yes}/{no})"
         self.yes = yes
@@ -40,8 +48,8 @@ class ConfirmField:
             self.yes_no_message = f"({yes}/{no.upper()})"
 
 
-    def ask(self):
-        value = input(f"{self.message}{self.yes_no_message}{self.prompt}")
+    def ask(self, prompt=None):
+        value = input(f"{self.message}{self.yes_no_message}{prompt or self.prompt or PROMPT}")
         if self.validator:
             if not self.validator(value):
                 return self.ask()
@@ -70,10 +78,9 @@ class Field:
         self.is_confirmator = is_confirmator
 
     def ask(self, question=None, error_message=None, prompt=None):
-        prompt = prompt or self.prompt
         question = question or self.text
         error_message = self.error_message or error_message
-        value = input(f"{question}{"*" if self.required else ""}{prompt}")
+        value = input(f"{question}{"*" if self.required else ""}{prompt or self.prompt or PROMPT}")
         if self.required:
             if not value:
                 print(error_message)
@@ -120,7 +127,6 @@ class ListField:
             index += 1
 
     def ask(self, question=None, error_message=None, prompt=None):
-        prompt = self.prompt or prompt
         error_message = self.error_message or error_message
         # question = question or self.text
         print(f"{self.text}{'*' if self.required else ''}")
@@ -132,11 +138,12 @@ class ListField:
         return self.choices[response]["value"] if response else None
 
 class Form:
-    def __init__(self, fields: list = None, validator=None, error_message=None, prompt=PROMPT):
+    def __init__(self, fields: list = None, validator=None, error_message=None, prompt=PROMPT, update_choice_error_message="Invalid choice"):
         self.fields = fields
         self.validator = validator
         self.error_message = error_message
-        self.prompt = prompt
+        self.prompt = prompt or PROMPT
+        self.update_choice_error_message = update_choice_error_message
 
     def add_fields(self, fields):
         for field in fields:
@@ -157,15 +164,42 @@ class Form:
                     raise FormError("Field must be a Field, ListField or ConfirmField")
                 if isinstance(field, Field):
                     question = field.text or field.name
-                    self.data[field.name] = field.ask(question, self.error_message, self.prompt)
+                    self.data[field.name] = field.ask(question, field.error_message or self.error_message, field.prompt or self.prompt)
                 elif isinstance(field, ListField):
-                    self.data[field.name] = field.ask(field.name, self.error_message, self.prompt)
+                    self.data[field.name] = field.ask(field.name, field.error_message or self.error_message, field.prompt or self.prompt)
                 elif isinstance(field, ConfirmField):
                     if field.recap and callable(field.displayer):
                         field.displayer(self.data)
-                    response = field.ask()
+                    response = field.ask(prompt=self.prompt)
                     if response == False:
                         confirmed = False
+        return self.data
+
+    def update(self, data=None, exclude=list(), yes_update=("y", "yes"), cancel=("c", "cancel"), next=("", "next"),
+               message="Update"):
+        self.data = data
+        for field in self.fields:
+            if isinstance(field, ConfirmField):
+                continue
+            if field.name in data and field.name not in exclude:
+                field.default = data[field.name]
+                response_is_correct = False
+                while response_is_correct is False:
+                    response_is_correct = True
+                    response = input(
+                        f"{message} '{field.name}'[{field.default}] {yes_update[1]}({yes_update[0].lower() or 'ENTER'})/{cancel[1]}"
+                        f"({cancel[0].lower() or 'ENTER'})/{next[1]}({next[0].lower() or 'ENTER'})?{self.prompt}").lower().strip()
+
+                    if response == yes_update[0].lower():
+                        question = field.text or field.name
+                        self.data[field.name] = field.ask()
+                    elif response == cancel[0].lower():
+                        return self.data
+                    elif response == next[0].lower():
+                        continue
+                    else:
+                        response_is_correct = False
+                        print(f"{self.update_choice_error_message}")
         return self.data
 
 
@@ -206,7 +240,7 @@ class Menu:
         display += buttons_line + "\n" + "="*(self.width) + "\n"
         display += error or ''
         print(display)
-        value = input(self.prompt)
+        value = input(self.prompt or PROMPT)
         if value in self.callbacks:
             self.callbacks[value]()
         else:
