@@ -80,15 +80,10 @@ class Field:
     def ask(self, question=None, error_message=None, prompt=None):
         question = question or self.text
         error_message = self.error_message or error_message
-        value = input(f"{question}{"*" if self.required else ""}{prompt or self.prompt or PROMPT}")
-        if self.required:
-            if not value:
-                print(error_message)
-                return self.ask(question, error_message, prompt)
-        else:
-            if not value:
-                return self.default
-        if self.typing is not None:
+        self.default_message = f"({self.default})" if self.default is not None else ""
+        value = input(f"{question}{"*" if self.required else ""}{self.default_message}{prompt or self.prompt or PROMPT}").strip()
+        value = value if value != "" else None
+        if self.typing is not None and value is not None:
             try:
                 if self.typing == bool:
                     value = bool(int(value))
@@ -97,7 +92,14 @@ class Field:
             except Exception:
                 print(error_message or "")
                 return self.ask(question, error_message, prompt)
-        if self.validator:
+        if self.required:
+            if value is None:
+                if self.required and self.default is not None:
+                    value = self.default
+                else:
+                    print(error_message)
+                    return self.ask(question, error_message, prompt)
+        if self.validator and value is not None:
             if not self.validator(value):
                 print(error_message or "")
                 return self.ask(question, error_message, prompt)
@@ -205,7 +207,7 @@ class Form:
 
 
 class Menu:
-    def __init__(self, items=None, title="Menu", prompt=PROMPT, width=WIDTH, error_message="Invalid choice"):
+    def __init__(self, items=None, title="Menu", prompt=PROMPT, width=WIDTH, error_message="Invalid choice", clear_on_error=False):
         """Labels are a list or tuple of 3 elements: [key, label, callback]"""
         self.title = title
         self.prompt = prompt
@@ -213,6 +215,7 @@ class Menu:
         self.callbacks = {}
         self.labels = {}
         self.error_message = error_message
+        self.clear_on_error = clear_on_error
         if items:
             self.add_items(items)
         else:
@@ -244,4 +247,6 @@ class Menu:
         if value in self.callbacks:
             self.callbacks[value]()
         else:
+            if self.clear_on_error:
+                clear()
             return self.ask(self.error_message)

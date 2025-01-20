@@ -15,7 +15,7 @@ characters = [
 
 character_form = Form([
         Field("name", required = True, error_message=f"{c.warning}A name is required{c.end}"),
-        Field("Strength", validator=lambda x: x>0, typing=int, error_message=f"{c.warning}Strength must be a positive number{c.end}", required=True),
+        Field("Strength", validator=lambda x: x>0, typing=int, error_message=f"{c.warning}Strength must be a positive number{c.end}", required=True, default=10),
         Field("Mana", validator=lambda x: x>0, typing=int, error_message=f"{c.warning}Mana must be a positive number{c.end}"),
         ListField(
             "occupation", "\nYour ocupation ?", choices=("Barbarian", "Magician", "Thieve", "Other"),
@@ -30,10 +30,8 @@ def create_view():
     if not confirmed:
         clear()
         list_view()
-    characters.append(data)
+    characters.insert(0, data)
     clear()
-    print("\nyou just entered:")
-    print(data)
     list_view()
 
 def exit_view():
@@ -48,7 +46,8 @@ def list_view():
         print(f"\n{'---- No characters yet ----': ^{WIDTH}}")
         menu.ask()
     index = len(characters)
-    print(f"{'index':<10}{'name':<20}{'Strength':<15}{'Mana':<10}{'occupation':<20}{'can fly':<15}")
+    print(f"{'index':<10}{'Name':<20}{'Strength':<15}{'Mana':<10}{'Occupation':<20}{'can fly':<15}")
+    print('-' * WIDTH)
     for i in range(index):
         print(
             f"{i:<10}{characters[i]['name']:<20}{characters[i]['Strength']:<15}{characters[i]['Mana'] or '---':<10}"
@@ -57,7 +56,7 @@ def list_view():
 
 def edit_view():
     index = Field("index", text="Which character do you want to edit ?", typing=int, validator=lambda x: x < len(characters),
-                  error_message="Invalid entry, enter a valid index").ask()
+                  error_message=f"{c.warning}Invalid entry, enter a valid index{c.end}").ask()
     if index is None:
         list_view()
     character = characters[index]
@@ -68,7 +67,7 @@ def edit_view():
 def delete_view():
     index = Field(
         "index", text="Which character do you want to delete ?", typing=int, validator=lambda x: x < len(characters),
-        error_message="Invalid entry, enter a valid index").ask()
+        error_message=f"{c.warning}Invalid entry, enter a valid index{c.end}").ask()
     if index is None:
         list_view()
     character = characters[index]
@@ -85,7 +84,9 @@ menu = Menu([
     (3, "edit character", edit_view),
     (4, "delete a character", delete_view),
     ("x", "exit", exit_view)],
-            title="RPG Now !!", width=WIDTH)
+            title="RPG Now !!",
+            width=WIDTH, error_message=f"{c.warning}Invalid choice{c.end}",
+            clear_on_error=True)
 
 
 if __name__ == "__main__":
