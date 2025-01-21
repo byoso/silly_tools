@@ -1,9 +1,10 @@
 #! /usr/bin/env python3
 
 from silly_engine import Field, Form, ListField, ConfirmField, Menu, clear, AutoArray
-from silly_engine import c
+from silly_engine import c, Logger
 
-WIDTH = 100  # try 100, 120
+WIDTH = 80  # try 100, 120
+logger = Logger("Minuit-Demo")
 
 # a data set to begin with
 characters = [
@@ -35,15 +36,14 @@ def create_view():
     list_view()
 
 def exit_view():
-    clear()
-    print("Goodbye !!")
+    logger.info("Goodbye !!")
     quit()
 
 def list_view():
     clear()
     array = AutoArray(
         characters, title="Characters", width=WIDTH, color_1=c.bg_blue, color_2=c.bg_green,
-        include=["name", "flying", "occupation", "mana", "strength"])
+        include=["name", "occupation", "mana", "strength", "flying"])
     print(array)
     menu.ask()
 
@@ -83,5 +83,8 @@ menu = Menu([
 
 
 if __name__ == "__main__":
-    clear()
-    list_view()
+    try:
+        clear()
+        list_view()
+    except KeyboardInterrupt:
+        exit_view()
