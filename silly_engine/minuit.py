@@ -176,7 +176,7 @@ class Form:
                         confirmed = False
         return data
 
-    def update(self, data=None, exclude=list(), yes_update=("y", "yes"), cancel=("c", "cancel"), next=("", "next"),
+    def update(self, data=None, exclude=list(), yes_update=("y", "yes"), set_null=("n", "null"), end=("e", "end"), next=("", "next"),
                message="Update"):
         data = data
         for field in self.fields:
@@ -188,13 +188,20 @@ class Form:
                 while response_is_correct is False:
                     response_is_correct = True
                     response = input(
-                        f"{message} '{field.name}'[{field.default}] {yes_update[1]}({yes_update[0].lower() or 'ENTER'})/{cancel[1]}"
-                        f"({cancel[0].lower() or 'ENTER'})/{next[1]}({next[0].lower() or 'ENTER'})?{self.prompt}").lower().strip()
+                        f"{message} '{field.name}'[{field.default}] {yes_update[1]}({yes_update[0].lower() or 'ENTER'})/{set_null[1]}({set_null[0].lower() or 'ENTER'})/"
+                        f"{end[1]}({end[0].lower() or 'ENTER'})/{next[1]}({next[0].lower() or 'ENTER'})?{self.prompt}").lower().strip()
+
 
                     if response == yes_update[0].lower():
                         question = field.text or field.name
                         data[field.name] = field.ask()
-                    elif response == cancel[0].lower():
+                    elif response == set_null[0].lower():
+                        if not field.required and field.validator(None):
+                            data[field.name] = None
+                        else:
+                            print(field.error_message)
+                            response_is_correct = False
+                    elif response == end[0].lower():
                         return data
                     elif response == next[0].lower():
                         continue

@@ -3,7 +3,7 @@
 from silly_engine import Field, Form, ListField, ConfirmField, Menu, clear, AutoArray
 from silly_engine import c
 
-WIDTH = 120  # try 100, 120
+WIDTH = 100  # try 100, 120
 
 # a data set to begin with
 characters = [
@@ -25,7 +25,6 @@ character_form = Form([
     ])
 
 def create_view():
-    print("create view")
     data = character_form.ask()
     confirmed = ConfirmField(message="Confirmed ?", default=True, recap=True).ask()
     if not confirmed:
