@@ -64,7 +64,7 @@ class ConfirmField:
 
 
 class Field:
-    def __init__(self, name=None, text=None, typing=None, validator=None, error_message=None,required=False, prompt=None, default=None, is_confirmator=False):
+    def __init__(self, name=None, text=None, typing=None, validator=None, error_message=None,required=False, prompt=None, default=None):
         if name is None:
             raise FieldError("Field name is required")
         self.name = name
@@ -74,13 +74,12 @@ class Field:
         self.error_message = error_message
         self.required = required
         self.prompt = prompt
-        self.default = default
-        self.is_confirmator = is_confirmator
+        self._default = default
 
     def ask(self, question=None, error_message=None, prompt=None):
         question = question or self.text
         error_message = self.error_message or error_message
-        self.default_message = f"({self.default})" if self.default is not None else ""
+        self.default_message = f"({self._default})" if self._default is not None else ""
         value = input(f"{question}{"*" if self.required else ""}{self.default_message}{prompt or self.prompt or PROMPT}").strip()
         value = value if value != "" else None
         if self.typing is not None and value is not None:
@@ -94,8 +93,8 @@ class Field:
                 return self.ask(question, error_message, prompt)
         if self.required:
             if value is None:
-                if self.required and self.default is not None:
-                    value = self.default
+                if self.required and self._default is not None:
+                    value = self._default
                 else:
                     print(error_message)
                     return self.ask(question, error_message, prompt)
@@ -158,28 +157,28 @@ class Form:
         confirmed = False
         while confirmed is False:
             confirmed = True
-            self.data = {}
+            data = {}
             for field in self.fields:
-                if not isinstance(field, ConfirmField) and field.name in self.data:
+                if not isinstance(field, ConfirmField) and field.name in data:
                     raise FormError(f"Field {field.name} already exists")
                 if not isinstance(field, (Field, ListField, ConfirmField)):
                     raise FormError("Field must be a Field, ListField or ConfirmField")
                 if isinstance(field, Field):
                     question = field.text or field.name
-                    self.data[field.name] = field.ask(question, field.error_message or self.error_message, field.prompt or self.prompt)
+                    data[field.name] = field.ask(question, field.error_message or self.error_message, field.prompt or self.prompt)
                 elif isinstance(field, ListField):
-                    self.data[field.name] = field.ask(field.name, field.error_message or self.error_message, field.prompt or self.prompt)
+                    data[field.name] = field.ask(field.name, field.error_message or self.error_message, field.prompt or self.prompt)
                 elif isinstance(field, ConfirmField):
                     if field.recap and callable(field.displayer):
-                        field.displayer(self.data)
+                        field.displayer(data)
                     response = field.ask(prompt=self.prompt)
                     if response == False:
                         confirmed = False
-        return self.data
+        return data
 
     def update(self, data=None, exclude=list(), yes_update=("y", "yes"), cancel=("c", "cancel"), next=("", "next"),
                message="Update"):
-        self.data = data
+        data = data
         for field in self.fields:
             if isinstance(field, ConfirmField):
                 continue
@@ -194,15 +193,15 @@ class Form:
 
                     if response == yes_update[0].lower():
                         question = field.text or field.name
-                        self.data[field.name] = field.ask()
+                        data[field.name] = field.ask()
                     elif response == cancel[0].lower():
-                        return self.data
+                        return data
                     elif response == next[0].lower():
                         continue
                     else:
                         response_is_correct = False
                         print(f"{self.update_choice_error_message}")
-        return self.data
+        return data
 
 
 
@@ -250,3 +249,58 @@ class Menu:
             if self.clear_on_error:
                 clear()
             return self.ask(self.error_message)
+
+class AutoArray:
+    """Build quickly an array of datas, the only required parameter is a list of dictionaries
+    containing only strings, integers or booleans"""
+    def __init__(self, liste, title=None, color_1=None, color_2=None, exclude=None, include=None, width=WIDTH):
+        self.as_string = ""
+        if include is not None and exclude is not None:
+            raise FieldError("You can't have both include and exclude set", "Internal")
+        if not isinstance(liste, list) or len(liste) == 0 or not isinstance(liste[0], dict):
+            raise FieldError("Array must be a list of dictionaries")
+        if title is not None:
+            title = f"{'='*3} {title} "
+            self.as_string += f"{title:=<{width}}\n"
+        if include is not None:
+            keys_nbr = len(include)
+        elif exclude is not None:
+            keys_nbr = len(liste[0]) - len(exclude)
+        else:
+            keys_nbr = len(liste[0])
+        header_bar = f"{'index':<6}"
+        if include is not None:
+            for key in include:
+                header_bar += f"{key.title():<{(width-6) // keys_nbr}}"
+        else:
+            for key in liste[0]:
+                if exclude and key in exclude:
+                    continue
+                header_bar += f"{key.title():<{(width-6) // keys_nbr}}"
+        self.as_string += f"{header_bar}\n" + "-"*width + "\n"
+        for i in range(len(liste)):
+            line = ""
+            color_1 = color_1 or ''
+            color_2 = color_2 or ''
+            color = color_1 if i % 2 == 0 else color_2
+            self.as_string += f"{color}"
+            line = f"{i:<6}"
+            if include is not None:
+                for key in include:
+                    display = liste[i][key] if liste[i][key] is not None else "-"
+                    line += f"{display:<{(width-6) // keys_nbr}}"
+            else:
+                for key in liste[i]:
+                    if include and key not in include:
+                        continue
+                    if exclude and key in exclude:
+                        continue
+                    display = liste[i][key] if liste[i][key] is not None else "-"
+                    line += f"{display:<{(width-6) // keys_nbr}}"
+            line += " " * (width - len(line))
+            self.as_string += line
+            self.as_string += f"\x1b[0m"  # end color
+            self.as_string += f"\n"
+
+    def __str__(self):
+        return self.as_string

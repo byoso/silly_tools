@@ -1,22 +1,22 @@
 #! /usr/bin/env python3
 
-from silly_engine import Field, Form, ListField, ConfirmField, Menu, clear
-from silly_engine import c, Logger
+from silly_engine import Field, Form, ListField, ConfirmField, Menu, clear, AutoArray
+from silly_engine import c
 
-WIDTH = 100
+WIDTH = 120  # try 100, 120
 
+# a data set to begin with
 characters = [
-    {"name": "Conan", "occupation": "Barbarian", "Strength": 90, "Mana": 0, "flying": False},
-    {"name": "Merlin", "occupation": "Magician", "Strength": 5, "Mana": 10, "flying": True},
-    {"name": "Robin", "occupation": "Thieve", "Strength": 5, "Mana": 5, "flying": False},
-    {"name": "Gandalf", "occupation": "Magician", "Strength": 10, "Mana": 10, "flying": True},
+    {"name": "Conan", "occupation": "Barbarian", "strength": 90, "mana": None, "flying": False},
+    {"name": "Merlin", "occupation": "Magician", "strength": 5, "mana": 10, "flying": True},
+    {"name": "Robin", "occupation": "Thieve", "strength": 5, "mana": 5, "flying": False},
+    {"name": "Gandalf", "occupation": "Magician", "strength": 10, "mana": 10, "flying": True},
 ]
-
 
 character_form = Form([
         Field("name", required = True, error_message=f"{c.warning}A name is required{c.end}"),
-        Field("Strength", validator=lambda x: x>0, typing=int, error_message=f"{c.warning}Strength must be a positive number{c.end}", required=True, default=10),
-        Field("Mana", validator=lambda x: x>0, typing=int, error_message=f"{c.warning}Mana must be a positive number{c.end}"),
+        Field("strength", validator=lambda x: x>0, typing=int, error_message=f"{c.warning}Strength must be a positive number{c.end}", required=True, default=10),
+        Field("mana", validator=lambda x: x>0, typing=int, error_message=f"{c.warning}Mana must be a positive number{c.end}"),
         ListField(
             "occupation", "\nYour ocupation ?", choices=("Barbarian", "Magician", "Thieve", "Other"),
             error_message=f"{c.warning}Enter a number from 1 to 4{c.end}"
@@ -25,6 +25,7 @@ character_form = Form([
     ])
 
 def create_view():
+    print("create view")
     data = character_form.ask()
     confirmed = ConfirmField(message="Confirmed ?", default=True, recap=True).ask()
     if not confirmed:
@@ -41,17 +42,10 @@ def exit_view():
 
 def list_view():
     clear()
-    print(f"{'---- Characters ----':=^{WIDTH}}")
-    if len(characters) == 0:
-        print(f"\n{'---- No characters yet ----': ^{WIDTH}}")
-        menu.ask()
-    index = len(characters)
-    print(f"{'index':<10}{'Name':<20}{'Strength':<15}{'Mana':<10}{'Occupation':<20}{'can fly':<15}")
-    print('-' * WIDTH)
-    for i in range(index):
-        print(
-            f"{i:<10}{characters[i]['name']:<20}{characters[i]['Strength']:<15}{characters[i]['Mana'] or '---':<10}"
-            f"{characters[i]['occupation'] or '---':20}{characters[i]['flying']:<15}")
+    array = AutoArray(
+        characters, title="Characters", width=WIDTH, color_1=c.bg_blue, color_2=c.bg_green,
+        include=["name", "flying", "occupation", "mana", "strength"])
+    print(array)
     menu.ask()
 
 def edit_view():
@@ -91,7 +85,4 @@ menu = Menu([
 
 if __name__ == "__main__":
     clear()
-    logger = Logger("Minuit")
-    logger.info("Let the demo begin here with some RPG characters !")
     list_view()
-    menu.ask()
