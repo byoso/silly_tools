@@ -1,10 +1,26 @@
 #! /usr/bin/env python3
 
-from silly_engine import Field, Form, ListField, ConfirmField, Menu, clear, AutoArray
-from silly_engine import c, Logger
+from silly_engine import (
+    Field,
+    Form,
+    ListField,
+    ConfirmField,
+    Menu,
+    clear,
+    AutoArray,
+    print_formated,
+    TextField,
+    TitleArt,
+    c, Logger)
 
-WIDTH = 80  # try 100, 120
+WIDTH = 100  # try 80, 100, 120
 logger = Logger("Minuit-Demo")
+
+
+intro_text = (
+    "    In the valley of the Minuit, you can create, list, edit and delete ferocious characters. They can be Barbarians, Magicians, Thieves,"
+    "or even... 'others'. They will accomplish their destiny of letting you try the minuit module of the mighty silly_engine. Enjoy the journey."
+)
 
 # a data set to begin with
 characters = [
@@ -18,6 +34,7 @@ character_form = Form([
         Field("name", required = True, error_message=f"{c.warning}A name is required{c.end}"),
         Field("strength", validator=lambda x: x>0, typing=int, error_message=f"{c.warning}Strength must be a positive number{c.end}", required=True, default=10),
         Field("mana", validator=lambda x: x>0, typing=int, error_message=f"{c.warning}Mana must be a positive number{c.end}"),
+        TextField(intro_text),
         ListField(
             "occupation", "\nYour ocupation ?", choices=("Barbarian", "Magician", "Thieve", "Other"),
             error_message=f"{c.warning}Enter a number from 1 to 4{c.end}"
@@ -41,6 +58,8 @@ def exit_view():
 
 def list_view():
     clear()
+    print(TitleArt("Silly Engine demo", jump=1, color=c.green))
+    print_formated(intro_text, width=WIDTH, color=c.info)
     array = AutoArray(
         characters, title="Characters", width=WIDTH, color_1=c.bg_blue, color_2=c.bg_green,
         include=["name", "occupation", "mana", "strength", "flying"])

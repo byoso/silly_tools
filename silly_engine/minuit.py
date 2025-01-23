@@ -2,12 +2,38 @@ import os
 
 
 PROMPT = " > "
-WIDTH = 120
+WIDTH = 100
 
 
 def clear():
     """clears the console"""
     os.system('cls' if os.name == 'nt' else 'clear')
+
+
+class TextField:
+    def __init__(self, text='', width=WIDTH, color=None):
+        self.text = text
+        self.width = width
+        self.display = ""
+        self.words = text.split(" ")
+        self.build_display()
+        if color:
+            self.display = f"{color}{self.display}\x1b[0m"
+
+    def build_display(self):
+        line = ""
+        for word in self.words:
+            if len(line) + len(word) > self.width:
+                self.display += line + "\n"
+                line = ""
+            line += word + " "
+        self.display += line + "\n"
+
+    def __str__(self):
+        return self.display
+
+def print_formated(text='', width=WIDTH, color=None):
+    print(TextField(text, width, color))
 
 
 def confirmation_displayer(data):
@@ -129,7 +155,6 @@ class ListField:
 
     def ask(self, question=None, error_message=None, prompt=None):
         error_message = self.error_message or error_message
-        # question = question or self.text
         print(f"{self.text}{'*' if self.required else ''}")
         for choice in self.choices:
             print(f"{choice:<5}- {self.choices[choice]["display"]}")
@@ -159,6 +184,9 @@ class Form:
             confirmed = True
             data = {}
             for field in self.fields:
+                if isinstance(field, TextField):
+                    print(field)
+                    continue
                 if not isinstance(field, ConfirmField) and field.name in data:
                     raise FormError(f"Field {field.name} already exists")
                 if not isinstance(field, (Field, ListField, ConfirmField)):
