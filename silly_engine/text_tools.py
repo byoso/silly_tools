@@ -7,6 +7,7 @@ c = Color
 print(f"{c.info}This is an info message{c.end}")
 """
 
+
 from .ascii_map_01 import abc_map_01 as abc_map
 
 print(abc_map)
@@ -32,13 +33,13 @@ class Color:
     bg_white = "\x1b[5;30;47m"
 
 
-class TitleArt:
-    def __init__(self, text="", abc_map=abc_map, color=None, jump=0):
+class Title:
+    def __init__(self, text="", abc_map=abc_map, color=None, step=0):
         self.height = len(abc_map["a"])
-        self.text = text.lower()
+        self.text = text
         self.color = color is not None
         self.display = color or ""
-        self.jump = jump
+        self.step = step
 
         self.build_display()
 
@@ -46,17 +47,24 @@ class TitleArt:
         for row in range(self.height):
             display = ""
             for i in range(len(self.text)):
-                letter = self.text[i]
-                display += abc_map[letter][row][self.jump:]
+                letter = self.text[i] if self.text[i] in abc_map else " "
+                if self.step > 0:
+                    display = self.stepper(display, abc_map[letter][row], self.step)
+                else:
+                    display += abc_map[letter][row]
             self.display += display + "\n"
         if self.color:
             self.display += Color.end
 
-    def jumper(display, letter_line, jump):
-        temp_display = display
-        for i in range(jump):
-            if display[-jump] == " ":
-                display[-jump] = letter_line[0]
+    def stepper(self, display, letter_line, step):
+        index = 1
+        while index < len(display) and index <= step:
+            if display[-1] == " ":
+                display = display[:-1]
+            else:
+                letter_line = letter_line[1:]
+            index += 1
+        return display + letter_line
 
     def __str__(self):
         return self.display

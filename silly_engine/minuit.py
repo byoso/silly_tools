@@ -36,13 +36,6 @@ def print_formated(text='', width=WIDTH, color=None):
     print(TextField(text, width, color))
 
 
-def confirmation_displayer(data):
-    print("\n== Check before confirmation ==" + "="*49)
-    for key in data:
-        print(f"- {key:<20}: {data[key]}")
-    print("="*80)
-
-
 class FieldError(Exception):
     def __init__(self, message: str="Field Error", status="Internal", *args, **kwargs):
         self.status = status
@@ -55,13 +48,12 @@ class FormError(FieldError):
         super().__init__(message, status, *args, **kwargs)
 
 
-class ConfirmField:
-    def __init__(self, message="Are you sure ?", yes="y", no="n", default=True, prompt=None, displayer=confirmation_displayer, recap=False):
+class Confirmation:
+    def __init__(self, message="Are you sure ?", yes="y", no="n", default=True, prompt=None, recap=False):
         self.message = message
         self.yes_no_message = f"({yes}/{no})"
         self.yes = yes
         self.no = no
-        self.displayer = displayer
         self.recap = recap
         self.default = default
         self.prompt = prompt
@@ -187,29 +179,21 @@ class Form:
                 if isinstance(field, TextField):
                     print(field)
                     continue
-                if not isinstance(field, ConfirmField) and field.name in data:
+                if field.name in data:
                     raise FormError(f"Field {field.name} already exists")
-                if not isinstance(field, (Field, ListField, ConfirmField)):
-                    raise FormError("Field must be a Field, ListField or ConfirmField")
+                if not isinstance(field, (Field, ListField)):
+                    raise FormError("Field must be a Field or ListField")
                 if isinstance(field, Field):
                     question = field.text or field.name
                     data[field.name] = field.ask(question, field.error_message or self.error_message, field.prompt or self.prompt)
                 elif isinstance(field, ListField):
                     data[field.name] = field.ask(field.name, field.error_message or self.error_message, field.prompt or self.prompt)
-                elif isinstance(field, ConfirmField):
-                    if field.recap and callable(field.displayer):
-                        field.displayer(data)
-                    response = field.ask(prompt=self.prompt)
-                    if response == False:
-                        confirmed = False
         return data
 
     def update(self, data=None, exclude=list(), yes_update=("y", "yes"), set_null=("n", "null"), end=("e", "end"), next=("", "next"),
                message="Update"):
         data = data
         for field in self.fields:
-            if isinstance(field, ConfirmField):
-                continue
             if field.name in data and field.name not in exclude:
                 field.default = data[field.name]
                 response_is_correct = False
@@ -292,11 +276,14 @@ class AutoArray:
         self.as_string = ""
         if include is not None and exclude is not None:
             raise FieldError("You can't have both include and exclude set", "Internal")
-        if not isinstance(liste, list) or len(liste) == 0 or not isinstance(liste[0], dict):
+        if not isinstance(liste, list):
             raise FieldError("Array must be a list of dictionaries")
         if title is not None:
             title = f"{'='*3} {title} "
             self.as_string += f"{title:=<{width}}\n"
+        if len(liste) == 0:
+            self.as_string += f"{'--- No data recorded ---':^{width}}\n"
+            return
         if include is not None:
             keys_nbr = len(include)
         elif exclude is not None:

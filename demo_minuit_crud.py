@@ -4,13 +4,13 @@ from silly_engine import (
     Field,
     Form,
     ListField,
-    ConfirmField,
+    Confirmation,
     Menu,
     clear,
     AutoArray,
     print_formated,
     TextField,
-    TitleArt,
+    Title,
     c, Logger)
 
 WIDTH = 100  # try 80, 100, 120
@@ -34,7 +34,6 @@ character_form = Form([
         Field("name", required = True, error_message=f"{c.warning}A name is required{c.end}"),
         Field("strength", validator=lambda x: x>0, typing=int, error_message=f"{c.warning}Strength must be a positive number{c.end}", required=True, default=10),
         Field("mana", validator=lambda x: x>0, typing=int, error_message=f"{c.warning}Mana must be a positive number{c.end}"),
-        TextField(intro_text),
         ListField(
             "occupation", "\nYour ocupation ?", choices=("Barbarian", "Magician", "Thieve", "Other"),
             error_message=f"{c.warning}Enter a number from 1 to 4{c.end}"
@@ -44,7 +43,7 @@ character_form = Form([
 
 def create_view():
     data = character_form.ask()
-    confirmed = ConfirmField(message="Confirmed ?", default=True, recap=True).ask()
+    confirmed = Confirmation(message="Confirmed ?", default=True, recap=True).ask()
     if not confirmed:
         clear()
         list_view()
@@ -58,7 +57,8 @@ def exit_view():
 
 def list_view():
     clear()
-    print(TitleArt("Silly Engine demo", jump=1, color=c.green))
+    # print(Title("Silly    Engine    demo", step=3, color=c.green))
+    print(Title("Silly Engine Demo", step=1, color=c.green))
     print_formated(intro_text, width=WIDTH, color=c.info)
     array = AutoArray(
         characters, title="Characters", width=WIDTH, color_1=c.bg_blue, color_2=c.bg_green,
@@ -83,7 +83,7 @@ def delete_view():
     if index is None:
         list_view()
     character = characters[index]
-    confirm = ConfirmField(message=f"Are you sure you want to delete {character['name']} ?").ask()
+    confirm = Confirmation(message=f"Are you sure you want to delete {character['name']} ?").ask()
     if confirm:
         characters.pop(index)
     clear()
@@ -93,10 +93,9 @@ def delete_view():
 menu = Menu([
     (1, "create a character", create_view),
     (2, "list characters", list_view),
-    (3, "edit character", edit_view),
+    (3, "edit a character", edit_view),
     (4, "delete a character", delete_view),
     ("x", "exit", exit_view)],
-            title="RPG Now !!",
             width=WIDTH, error_message=f"{c.warning}Invalid choice{c.end}",
             clear_on_error=True)
 

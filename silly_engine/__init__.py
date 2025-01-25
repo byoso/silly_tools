@@ -1,5 +1,5 @@
 from .router import Router, Subrouter, RouterError
 from .jsondb import JsonDB, JsonDBError
-from .text_tools import Color as c, TitleArt
+from .text_tools import Color as c, Title
 from .logger import Logger
-from .minuit import Field, Form, ListField, FieldError, FormError, ConfirmField, Menu, clear, AutoArray, TextField, print_formated
+from .minuit import Field, Form, ListField, FieldError, FormError, Confirmation, Menu, clear, AutoArray, TextField, print_formated
