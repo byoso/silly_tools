@@ -10,10 +10,10 @@ from silly_engine import (
     AutoArray,
     print_formated,
     TextField,
-    Title,
+    print_title,
     c, Logger)
 
-WIDTH = 100  # try 80, 100, 120
+WIDTH = 120  # try 80, 100, 120
 logger = Logger("Minuit-Demo")
 
 
@@ -57,8 +57,7 @@ def exit_view():
 
 def list_view():
     clear()
-    # print(Title("Silly    Engine    demo", step=3, color=c.green))
-    print(Title("Silly Engine Demo", step=1, color=c.green))
+    print_title("Silly  Engine  Demo", step=1, color=c.green)
     print_formated(intro_text, width=WIDTH, color=c.info)
     array = AutoArray(
         characters, title="Characters", width=WIDTH, color_1=c.bg_blue, color_2=c.bg_green,
@@ -83,8 +82,8 @@ def delete_view():
     if index is None:
         list_view()
     character = characters[index]
-    confirm = Confirmation(message=f"Are you sure you want to delete {character['name']} ?").ask()
-    if confirm:
+    confirmed = Confirmation(f"Are you sure you want to delete {character['name']} ?", default=False).ask()
+    if confirmed:
         characters.pop(index)
     clear()
     list_view()

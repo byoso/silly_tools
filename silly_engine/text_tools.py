@@ -68,3 +68,6 @@ class Title:
 
     def __str__(self):
         return self.display
+
+def print_title(text="no title", abc_map=abc_map, color=None, step=0):
+    print(Title(text, abc_map, color, step))
