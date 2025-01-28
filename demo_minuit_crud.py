@@ -57,10 +57,10 @@ def exit_view():
 
 def list_view():
     clear()
-    print_title("Silly  Engine  Demo", step=1, color=c.green)
+    print_title("Silly  Engine  Demo", step=2, color=c.green)
     print_formated(intro_text, width=WIDTH, color=c.info)
     array = AutoArray(
-        characters, title="Characters", width=WIDTH, color_1=c.bg_blue, color_2=c.bg_green,
+        characters, title="Characters", width=WIDTH, color_1=c.bg_cyan, color_2=c.bg_blue,
         include=["name", "occupation", "mana", "strength", "flying"])
     print(array)
     menu.ask()
